@@ -1,3 +1,32 @@
+<script context="module">
+  export function preload(page) {
+  return this.fetch('https://svelte-jp.firebaseio.com/meetups.json').then(res => {
+    if (!res.ok) {
+      throw new Error ('Fetching meetups failed, please try again later.')
+    }
+    return res.json();
+  }).then(data => {
+    const loadedMeetups = [];
+    for (const key in data) {
+      loadedMeetups.push({
+	...data[key],
+	id: key
+      });
+    }
+    return { fetchedMeetups: loadedMeetups };
+    /*setTimeout(() => {*/
+      /*isLoading = false;*/
+      /*meetups.setMeetups(loadedMeetups.reverse());*/
+    /*}, 1000)*/
+  }).catch(err => {
+    error = err;
+    isLoading = false;
+    console.log(err)
+    this.error(500, 'Could not fetch meetups')
+})
+  }
+</script>
+
 <script>
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { scale } from 'svelte/transition';
@@ -9,7 +38,8 @@
   import EditMeetup from '../components/Meetup/EditMeetup.svelte';
   import LoadingSpinner from '../components/UI/LoadingSpinner.svelte';
 
-  let fetchedMeetups = [];
+  export let fetchedMeetups;
+
   let editMode;
   let editedId;
   let isLoading;
@@ -20,39 +50,10 @@
   let unsubscribe;
 
   $: filteredMeetups = favsOnly ? fetchedMeetups.filter(m => m.isFavorite) :
-    fetchedMeetups
+    fetchedMeetups;
 
   onMount(() => {
-    unsubscribe = meetups.subscribe(items => fetchedMeetups = items);
-    isLoading = true;
-    fetch('https://svelte-jp.firebaseio.com/meetups.json').then(res => {
-      if (!res.ok) {
-	throw new Error ('Fetching meetups failed, please try again later.')
-      }
-      return res.json();
-    }).then(data => {
-      const loadedMeetups = [];
-      for (const key in data) {
-	loadedMeetups.push({
-	  ...data[key],
-	  id: key
-	});
-      }
-      setTimeout(() => {
-	isLoading = false;
-	meetups.setMeetups(loadedMeetups.reverse());
-      }, 1000)
-    }).catch(err => {
-      error = err;
-      isLoading = false;
-      console.log(err)
-    })
-  })
-
-  onDestroy(() => {
-    if (unsubscribe) {
-      unsubscribe();
-    }
+    meetups.setMeetups(fetchedMeetups);
   })
 
   function setFilter(event) {
